@@ -1,0 +1,767 @@
+#### Kandidatuppsats ##### 
+
+install.packages("ggplot2")
+install.packages("rmarkdown")
+install.packages("summarytools")
+install.packages("HSAUR2")
+install.packages("cowplot")
+install.packages("moonBook")
+
+library(summarytools)
+library(ggplot2)
+library(rmarkdown)
+library(HSAUR2)
+library(cowplot)
+library(moonBook)
+
+#### Kandidatuppsats ##### 
+
+install.packages("ggplot2")
+install.packages("rmarkdown")
+install.packages("summarytools")
+install.packages("HSAUR2")
+
+library(summarytools)
+library("ggplot2")
+library("rmarkdown")
+library(HSAUR2)
+
+
+####################################################################################################################
+#### Deskriptiv statistisk analys nedan ##############
+
+# Laddar in dokument 
+
+Mergedfile_rensad<-read.csv2(file.choose()) # Öppnar ruta för att välja csv- fil
+
+# Datafix. 
+#Tänk på att integer -> numerisk direkt (inte till faktor och sen numerisk).
+
+# Gör ny data frame med enbart aktuella variabler. 
+freq(Mergedfile_rensad$ï..Kundkorgar)
+Beroende.variabler <- data.frame(Mergedfile_rensad$Kundkorgar, Mergedfile_rensad$Dag, 
+                                 Mergedfile_rensad$Alder, 
+                                 Mergedfile_rensad$CartAdditions, Mergedfile_rensad$Checkouts,
+                                 Mergedfile_rensad$NoCustomerOrderY2, Mergedfile_rensad$LastTouchChannel,
+                                 Mergedfile_rensad$Antal_besokta_sidor, Mergedfile_rensad$Betalningsmetod,
+                                 Mergedfile_rensad$Time_min) 
+
+# Döper om dem 
+
+variabler$Kundkorg <- Beroende.variabler$Mergedfile_rensad.Kundkorgar
+variabler$Dag <- Beroende.variabler$Mergedfile_rensad.Dag
+variabler$Ålder <- Beroende.variabler$Mergedfile_rensad.Alder
+variabler$CartAdditions <- Beroende.variabler$Mergedfile_rensad.CartAdditions
+variabler$Checkouts <- Beroende.variabler$Mergedfile_rensad.Checkouts
+variabler$Orderhistorik <- Beroende.variabler$Mergedfile_rensad.NoCustomerOrderY2
+variabler$Ingångskanal <- Beroende.variabler$Mergedfile_rensad.LastTouchChannel
+variabler$BesöktaSidor <- Mergedfile_rensad$Antal_besokta_sidor
+variabler$Betalningsmetod <- Beroende.variabler$Mergedfile_rensad.Betalningsmetod
+variabler$TidSpenderad <- Mergedfile_rensad$Time_min
+
+
+# byter format
+
+Beroende.variabler$Kundkorg <- as.factor(Beroende.variabler$Kundkorg)
+Beroende.variabler$Dag <- as.factor(Beroende.variabler$Dag)
+Beroende.variabler$Ålder <- as.numeric(Beroende.variabler$Ålder)
+Beroende.variabler$CartAdditions <- as.numeric(Beroende.variabler$CartAdditions)
+Beroende.variabler$Checkouts <- as.numeric(Beroende.variabler$Checkouts)
+Beroende.variabler$Orderhistorik <- as.numeric(Beroende.variabler$Orderhistorik)
+Beroende.variabler$BesöktaSidor <- as.numeric(Beroende.variabler$BesöktaSidor)
+Beroende.variabler$Ingångskanal <- as.factor(Beroende.variabler$Ingångskanal)
+Beroende.variabler$Betalningsmetod <- as.factor(Beroende.variabler$Betalningsmetod)
+Beroende.variabler$TidSpenderad <- as.numeric(Beroende.variabler$TidSpenderad)
+
+# Variabeln Ålder fattas värden, rensar bort rader med NA
+freq(Beroende.variabler$Mergedfile_rensad.Alder)
+Beroende.variabler$na_alder <- is.na(Beroende.variabler$Mergedfile_rensad.Alder)
+table(Beroende.variabler$na_alder) # 553 saknas
+Variabler <- subset(Beroende.variabler, na_alder == "FALSE")
+Variabler$na_alder <- NULL # Tar bort variabeln med NA-värden
+
+# Variabeln Tidspenderad fattas värden. 
+Variabler$na_tid <- is.na(Variabler$TidSpenderad)
+table(Variabler$na_tid) # 553 saknas
+Variabler <- subset(Variabler, na_tid == "FALSE")
+Variabler$na_tid <- NULL # Tar bort variabeln med NA-värden
+
+Beroende.variabler <- NULL # Tar bort df med NA-värden
+
+
+# sparar som data frame (läggs i working directory)
+save(Variabler, file="ViktigaVariabler.Rdata")
+
+# Deskriptiv statistik
+view(dfSummary(Variabler, headings = FALSE)) # Översiktstabell
+
+
+# Gör en DF med enbart övergivna kundkorgar
+overgiven_korg <- subset(Variabler, Kundkorg == "0")
+overgiven_korg$korg<- as.numeric(overgiven_korg$Kundkorg)
+
+view(dfSummary(overgiven_korg, headings = FALSE)) # Översiktstabell
+
+
+
+
+# Anovas, 
+# se sid 121 i nedan länk för logistisk regression
+# file:///C:/Users/fredr/Documents/Kims%20studier/Kandidatexamen%20-%20Kurser/Avklarade%20kurser/Statistisk%20dataanalys%20-%20Linn%C3%A9%20universitetet/R%20uppgift%20due%2024%20okt/A_handbook_of_statistical_analyses_using.pdf
+# Collinearity: Kontrollerar korrelationer bland beroende variabler
+cor(Variabler[c("CartAdditions","Ålder","Checkouts","Orderhistorik", "TidSpenderad", "BesöktaSidor")])
+# Korrelation mellan CartAdditions+ Checkouts 29,8%, CartAddition+TidSpenderad 37,8%. 
+# Korrelation mellan Ålder+Orderhistorik 14%
+# Korrelation mellan Checkouts+ Tidspenderad 27,8%
+# Korrelation mellan Besökta sidor+CartAdditions 43,3%, +Checkouts 36,7% + Tidspenderad 71,7%
+
+
+#Korr mellan checkouts och ålder? 
+cor(Mergedfile_rensad$Checkouts, Mergedfile_rensad$Alder, use = "everything", 
+    method = c("pearson"))
+plot(Mergedfile_rensad$Alder, Mergedfile_rensad$Checkouts)
+
+
+
+
+# Model: log(Kundkorg_i) = beta_0 + beta1*CartAdditions + beta2*Checkouts + beta3* 
+
+# Control of linearity using scatterplots
+plot(biking,heartdisease, ylab="heart disease")
+plot(smoking,heartdisease, ylab="heart disease")
+
+
+descr(data, stats = c("mean", "sd", "min", "max"),
+      transpose = TRUE, headings = FALSE,
+      style="rmarkdown")
+
+kanduppsats.data$Alder<-as.factor(kanduppsats.data$Alder) # Från character till faktor
+kanduppsats.data$Alder<-as.numeric(kanduppsats.data$Alder) # Från faktor till numerisk
+mean(kanduppsats.data$Alder)
+summary(data$Alder)
+hist(data$Alder)
+
+# Kollar Dag och Ålder med densityplots
+data$Köp<-as.factor(data$Kundkorgar) 
+data$Alder<-as.factor(data$Alder) # Från character till faktor
+data$Alder<-as.numeric(data$Alder) # Från faktor till numerisk
+data$Dag<-as.factor(data$Dag) # Från character till faktor
+data$Dag<-as.numeric(data$Dag) # Från faktor till numerisk
+
+layout(matrix(1:2, ncol = 2))
+cdplot(Köp ~ Alder, data = data)
+cdplot(Köp ~ Dag, data = data)
+
+
+
+
+dyes <- with(USmelanoma, density(mortality[ocean == "yes"]))
+R> dno <- with(USmelanoma, density(mortality[ocean == "no"]))
+R> plot(dyes, lty = 1, xlim = xr, main = "", ylim = c(0, 0.018))
+R> lines(dno, lty = 2)
+R> legend("topleft", lty = 1:2, legend = c("Coastal State",
+                                           + "Land State"), bty = "n")
+
+
+
+
+# Testar en log plot
+
+plot(log(Köp) ~ log(Alder), data = data, col = rgb(0,0,0,0.1), pch)
+
+data$Köp<-as.numeric(data$Kundkorgar) 
+data$Alder<-as.numeric(data$Alder) 
+
+#Gör om variablar från character till faktor
+
+data$Betalningsmetod<-as.factor(data$Betalningsmetod) # Från character till faktor
+data$Betalningsmetod<-as.numeric(data$Betalningsmetod) # Från faktor till numerisk
+
+# Kollar Dag och Ålder med densityplots
+layout(matrix(1:2, ncol = 2))
+cdplot(Köp ~ Alder, data = data)
+cdplot(Köp ~ Dag, data = data)
+
+dyes <- with(USmelanoma, density(mortality[ocean == "yes"]))
+R> dno <- with(USmelanoma, density(mortality[ocean == "no"]))
+R> plot(dyes, lty = 1, xlim = xr, main = "", ylim = c(0, 0.018))
+R> lines(dno, lty = 2)
+R> legend("topleft", lty = 1:2, legend = c("Coastal State",
+                                           + "Land State"), bty = "n")
+
+# Kollar Betalningsmedel med densityplots
+#data("data", package = "HSAUR2") # Om man vill kolla två subgrupper i en variabel, använd denna. 
+layout(matrix(1, ncol = 2))
+cdplot(Köp ~ Betalningsmetod, data = data)
+
+
+# Gör om produktkategorierna till numerisk
+data$Beauty<-as.numeric(data$Beauty) # Från faktor till numerisk
+data$Homeinterior<-as.factor(data$Homeinterior) # Från character till faktor
+data$Homeinterior<-as.numeric(data$Homeinterior) # Från faktor till numerisk
+data$Ladies<-as.factor(data$Ladies) # Från character till faktor
+data$Ladies<-as.numeric(data$Ladies) # Från faktor till numerisk
+data$Kids<-as.factor(data$Kids) # Från character till faktor
+data$Kids<-as.numeric(data$Kids) # Från faktor till numerisk
+data$Men<-as.factor(data$Men) # Från character till faktor
+data$Men<-as.numeric(data$Men) # Från faktor till numerisk
+data$Electronic<-as.factor(data$Electronic) # Från character till faktor
+data$Electronic<-as.numeric(data$Electronic) # Från faktor till numerisk
+
+
+# Vill ha kontinuerlig variabel med antal produkter i varje kategori
+data$skonhetsprodukter <- data$CartAdditions[where data$CartAdditions %in% c(1)]
+data$skonhetsprodukter<-as.factor(data$skonhetsprodukter) # Från character till faktor
+data$skonhetsprodukter<-as.numeric(data$skonhetsprodukter) # Från faktor till numerisk
+skonhetsprodukter<- subset(data, Beauty=="1" & CartAdditions > 0)
+
+data$vector_products <- sapply(dt, min)
+
+
+# Kollar produktkategorier med densityplots
+#data("data", package = "HSAUR2") # Om man vill kolla två subgrupper i en variabel, använd denna. 
+layout(matrix(1:2, ncol = 2))
+cdplot(Köp ~ CartAdditions, data = skonhetsprodukter)
+cdplot(Köp ~ Beauty, data = skonhetsprodukter)
+
+
+cdplot(Köp ~ Ladies, data = data)
+cdplot(Köp ~ Kids, data = data)
+cdplot(Köp ~ Men, data = data)
+cdplot(Köp ~ Electronic, data = data)
+
+# Vill lägga dem i en vektor så de är subgrupper för att kunna testa korrelationer mellan
+
+
+
+t.test(stickprov, mu=7.5) 
+
+
+
+
+
+
+# Kollar om det finns korr mellan kön och köp 
+freq(Merged_export$Kon_bin, headings = FALSE, report.nas = FALSE, style="rmarkdown")
+print(ctable(x = Merged_export$Kon_bin, y= Merged_export$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+barplot(Mergedfile_rensad$Kundkorgar, Mergedfile_rensad$CustomerPaymentMethod,
+        main="Kundkorgar uppdelade efter betalningsmetod", # title
+        names.arg=c("Jan","Feb","Mar","Apr","May"), # x label
+        xlab="Betalningsmetod",ylab="Kundkorgar",col=c("tan2","blue","darkslategray3"),
+        cex.axis = 2, cex.names = 2, cex.lab=2, cex.main=2.5)
+# legend
+legend(x=0.2,y=24,c("soft","hardware","service"), cex=1.8,
+       col=c("tan2","blue","darkslategray3"),pch=c(15,15,15))
+abline(h = 0)
+
+?barplot()
+
+
+
+# Kollar om det finns korr mellan checkouts och köp 
+freq(Mergedfile_rensad$Checkouts, headings = FALSE, report.nas = FALSE, style="rmarkdown")
+print(ctable(x = Mergedfile_rensad$Checkout_max5, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+#Korr mellan checkouts och ålder? 
+cor(Mergedfile_rensad$Checkouts, Mergedfile_rensad$Alder, use = "everything", 
+    method = c("pearson"))
+plot(Mergedfile_rensad$Alder, Mergedfile_rensad$Checkouts)
+?cor()
+# Kollar om det finns korr mellan checkouts och köp 
+print(ctable(x = Mergedfile_rensad$Checkout_max5, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+# Kollar om det finns korr mellan betalningsmedel och köp 
+print(ctable(x = Mergedfile_rensad$CustomerPaymentMethod, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+ctable(Mergedfile_rensad$CartAdditions, Mergedfile_rensad$Kundkorgar, headings = FALSE, report.nas = FALSE, style="rmarkdown")
+
+
+
+# Kollar ifall tidigare ordrar har en korrelation med köpvariabeln 
+ctable(Mergedfile_rensad$NoCustomerOrderY2, Mergedfile_rensad$Kundkorgar, headings = FALSE, report.nas = FALSE, style="rmarkdown")
+print(ctable(x = Mergedfile_rensad$NoCustomerOrderY2, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+# kollar korrelationer mellan 
+hist(Mergedfile_rensad$NoCustomerOrderY2)
+ctable(Mergedfile_rensad$NoCustomerOrderY2, Mergedfile_rensad$Aldersgrp, headings = FALSE, report.nas = FALSE, style="rmarkdown")
+
+
+# Kollar ifall landningssida korrelerar med köp 
+print(ctable(x = Mergedfile_rensad$Landningssida, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+# Vill välja ut alla rader i Landningssida som innehåller "rea"
+install.packages("stringr")
+library(stringr)
+
+rea <- Mergedfile_rensad[str_detect(Mergedfile_rensad$Landningssida, "rea"), ] # Filtrerar ut alla rader där värdet "rea" ingår 
+
+
+?as.factor
+rea <- rea$Landningssida # Väljer ut enbart den kolumn jag är intresserad av, landningssida
+freq(rea$ï..Kundkorgar, headings = FALSE, report.nas=FALSE, style="rmarkdown")
+summary(rea$ï..Kundkorgar)
+
+
+
+ctable(x = Mergedfile_rensad$Landningssida, y = Mergedfile_rensad$ï..Kundkorgar, chisq = TRUE)
+
+freq(rea, headings = FALSE, report.nas=FALSE, style="rmarkdown")
+
+?ctable
+
+freq(iris$Species, headings = FALSE, report.nas=FALSE, style="rmarkdown")
+
+ctable() #cross tabulation, joint freq between pairs
+#of pairs of discrete/categorical variables
+descr() #descript univariate statistics for numerical
+
+
+##### Apply() family of functions
+m1 <- matrix(C<-(1:30), nrow=5, ncol=6) #make a vector
+a_m1 <- apply(m1, 2, sum) #apply rhe function sum to each column of the matrix
+
+
+#use tapply function to calculate desc stat b species
+with(iris, tapply(Sepal.length, species, median)) #in with you can use Sepal.length without using $
+with(iris, tapply(Sepal.length, species, mean)) # calculate the mean sepal length by species
+
+#
+## descriptive stat from summarytools package
+descr(iris, headings= FALSE, style="rmarkdown")
+# or in another style : 
+descr(iris, stats = c("mean", "sd"), transpose = TRUE, headings = FALSE, style="rmarkdown")
+
+
+####################################################################################################################
+                    #### Logistisk regressionsanalys nedan ##############
+
+## Anv?nder Rdata fil: Variabler_utan_extremv?rden.Rdata med 16435 observationer, 20 variabler.
+
+# Kollar variablers medelvärden samt min, max efter rensning av extremvärden
+view(dfSummary(variabler_utanextremvarden, headings = FALSE))
+
+### Kön
+# Kollar om det finns sign skillnad mellan kön
+print(ctable(x = variabler_utanextremvarden$kon, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+
+### Alder
+# Kollar om det finns sign skillnad mellan grupper
+print(ctable(x = variabler_utanextremvarden$Aldersgrp, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+### Ja, det fanns sign skillnader. Kollar med glm
+alder_glm <- glm(Kundkorg=="0" ~ Alder, data=variabler_utanextremvarden, family="binomial")
+summary(alder_glm, corr=T)
+exp(coef(alder_glm)["(Intercept)"])
+(exp(coef(alder_glm)["Ålder"])-1)*100
+plot(variabler_utanextremvarden$Alder, fitted(glm(Kundkorg=="0" ~ Alder, data=variabler_utanextremvarden, family="binomial")), xlab="Ålder", ylab = "Sannolikhet att kundkorgen överges")
+
+##########
+### Orderhistorik, behöver dela upp i två: 0 tidigare ordrar och 1 eller fler tidigare ordrar. 
+variabler_utanextremvarden$kundtyp <- ifelse(variabler_utanextremvarden$Orderhistorik >= 1, 1, 0)
+
+### Därefter en till med 1-372 ordrar. 
+Tidigare.Orders <- variabler_utanextremvarden[variabler_utanextremvarden$Orderhistorik > 0,
+                                              c("Orderhistorik", "Kundkorg", "Aldersgrp")]
+
+#vilka är nya kunder? Dvs kundtyp = 0, inga tidigare orders. Totalt rör det sig om cirka 1000 personer. 
+print(ctable(x = variabler_utanextremvarden$kundtyp, y= variabler_utanextremvarden$Aldersgrp, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+# Kollar om det finns sign skillnad mellan kundtyper
+print(ctable(x = variabler_utanextremvarden$kundtyp, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+### Ja, det fanns sign skillnader. Kollar med glm
+kundtyp_glm <- glm(Kundkorg=="0" ~ kundtyp, data=variabler_utanextremvarden, family="binomial")
+summary(kundtyp_glm)
+exp(coef(kundtyp_glm)["kundtyp"]) 
+(exp(coef(kundtyp_glm)["kundtyp"])-1)*100 # -41 % Sannolikheten att en kundkorg överges minskar med 41 % om kunden har en tidigare order.
+
+## Finns det en övervägande stor andel äldre kunder, kanske det blir konstigt. 
+kundtyp.alder_glm <- glm(Kundkorg=="0" ~ kundtyp + Aldersgrp + kundtyp:Aldersgrp, data=variabler_utanextremvarden, family="binomial")
+summary(kundtyp.alder_glm)
+(exp(coef(kundtyp.alder_glm)["Aldersgrp"])-1)*100 # -41 % Sannolikheten att en kundkorg överges minskar med 41 % om kunden har en tidigare order.
+# kundtyp minskade till -32. ?lder -2.82
+# samspelstermen blev inte signifikant. Verkar inte finnas någon särskild ålder som är  särskilkundtyp
+variabler_utanextremvarden$Aldersgrp <- C(variabler_utanextremvarden$Aldersgrp, contr.treatment, base=3)
+
+
+### Kollar hur kunder med fler ?n en order inverkar p? kundkorgens utfall
+orderhistorik_glm <- glm(Kundkorg=="0" ~ Orderhistorik, data=Tidigare.Orders, family="binomial")
+summary(orderhistorik_glm)
+exp(coef(orderhistorik_glm)["Orderhistorik"])
+(exp(coef(orderhistorik_glm)["Orderhistorik"])-1)*100
+plot(Tidigare.Orders$Orderhistorik, fitted(glm(Kundkorg=="0" ~ Orderhistorik, data=Tidigare.Orders, family="binomial")), xlab="Antal ordrar bland ?terkommande kunder", ylab = "Sannolikhet att kundkorgen ?verges")
+
+
+## Antal dagar sedan sista ordern
+## Genomsnitt? 97 dgr.
+descr(variabler_utanextremvarden$Dagarsensistaordern, stats = c("mean", "sd", "min", "max", "skewness", "iqr"),
+      transpose = TRUE, headings = FALSE,
+      style="rmarkdown")
+
+### Kollar om antal dagar inverkar på kundkorgen 
+aterk.kund.dagar_glm <- glm(Kundkorg=="0" ~ Dagarsensistaordern, data=variabler_utanextremvarden, family="binomial")
+summary(aterk.kund.dagar_glm)
+## Visar inte på signifikant resultat. 
+
+
+############# KUNDRESA // KÖPPROCESS
+
+######
+
+## hur de anländer
+print(ctable(x = variabler_utanextremvarden$Kanal, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+### Ja, det fanns sign skillnader. Kollar med glm
+kanal_glm <- glm(Kundkorg=="0" ~ Kanal, data=variabler_utanextremvarden, family="binomial")
+summary(kanal_glm, corr=T)
+exp(coef(tid_glm)["(Intercept)"])
+(exp(coef(kanal_glm)["IngångskanalPaid Search-shopping"])-1)*100
+(exp(coef(kanal_glm)["IngångskanalOrganic Search"])-1)*100
+
+# Hänsyn ålder
+kanal_glm <- glm(Kundkorg=="0" ~ Kanal + Alder, data=variabler_utanextremvarden, family="binomial")
+summary(kanal_glm)
+exp(coef(tid_glm)["(Intercept)"])
+(exp(coef(kanal_glm)["IngångskanalPaid Search-shopping"])-1)*100
+(exp(coef(kanal_glm)["IngångskanalOrganic Search"])-1)*100
+
+
+#### vart de landar: Landningssida
+# Vilken är den vanligaste landningssidan? 
+
+freq(variabler_utanextremvarden$Landningssida, order= "freq") # Får fram de mest besökta. 
+
+##### Vill skapa en barplot med landningssida
+# Gör först en matris med summorna av antal tillagda produkter
+view(dfSummary(variabler_utanextremvarden, headings = FALSE)) # Kollar produktkategori = 1
+Landningsidor <- matrix(c(5585, 3886, 1418, 1083), nrow=1, ncol=4, byrow=TRUE)
+
+# Därefter en barplot där namnen på respektive kategori anges under names.arg
+barplot(Landningsidor,
+        names.arg=c("Startsida", "Produktsida", "Dam Nyheter", "Rea"), # x label
+        xlab="Landningssidor",ylab="Antal kunder",col=c("darkblue"),
+        cex.main=2)
+# legend
+abline(h = 0)
+
+# Gör en ny df med enbart mest frekventa landningssidor
+tmp <- subset(variabler_utanextremvarden,
+              Landningssida %in% c("shop:se:homepage", "shop:se:productpage",
+                                   "shop:se:dam/b/ladies-news", "shop:se:rea"))
+
+# Testar chitvå test. 
+print(ctable(x = tmp$Landningssida, y= tmp$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+#Ändrar grupp pga inte signifikant intercept
+tmp$Landningssida <- as.factor(tmp$Landningssida)
+tmp$Landningssida <- C(tmp$Landningssida, contr.treatment, base=4)
+
+# VIlken inverkan har landningssidorna på kundkorgen, jämför alla med rea sidan.
+landning_glm <- glm(Kundkorg=="0" ~ Landningssida, data=tmp, family="binomial")
+summary(landning_glm)
+
+# Allt sign.
+
+(exp(coef(landning_glm)["Landningssida3"])-1)*100 # 1: -37 startsida, 2: 30 produktsida, 3: 29 . 
+
+# VIlken inverkan har landningssidorna p? kundkorgen, med h?nsyn till variationer i ?lder.
+landningalder_glm <- glm(Kundkorg=="0" ~ Landningssida + Aldersgrp + Landningssida:Aldersgrp, data=tmp, family="binomial")
+summary(landningalder_glm)
+
+## Intercept sign. ?ven aldersgrp 5, 6. Samspel mellan Landnsida 3 och aldersgrupp 2.
+
+
+### Finns det någon sida som korr med checkouts? 
+# Testar chitvå test. 
+
+
+# VIlken inverkan har landningssidorna på kundkorgen, jämför alla med login sidan.
+landning_glm <- glm(Kundkorg=="0" ~ Checkouts + Landningssida + Checkouts:Landningssida, data=tmp, family="binomial")
+summary(landning_glm, corr=T)
+
+# Intercept signifikant. Checkouts inte sign. Landnsida 2-5 och 7 sign. Samspel: Checkouts och sida 3,4 och 7 samspelar.
+# corr mellan checkouts och landnig 4, 5 och 7.  
+
+
+
+########################## PAGES -> BES?KTA SIDOR (NUMERISK), LANDNINGSSIDA, BES?KTA SIDOR (KATEGORI)
+######### besökta sidor, spelar det någon roll om kunden klickar sig igenom väldigt många sidor?
+
+### Besökta sidor är en kontinuerlig variabel och kan inte kollas med ett chitvå test, kollar med en glm. 
+besok_glm <- glm(Kundkorg=="0" ~ Besoktasidor, data=variabler_utanextremvarden, family="binomial")
+summary(besok_glm)
+(exp(coef(besok_glm)["Besoktasidor"])-1)*100
+# -4 procent per sida
+plot(variabler_utanextremvarden$Besoktasidor, fitted(glm(Kundkorg=="0" ~ Besoktasidor, data=variabler_utanextremvarden, family="binomial")), xlab="Besökta sidor", ylab = "Sannolikhet att kundkorgen överges")
+
+# Om man tar hänsyn till skillnader i åldrar, hur ser det ut då? 
+besok_glm <- glm(Kundkorg=="0" ~ Besoktasidor + Aldersgrp + Besoktasidor:Aldersgrp, data=variabler_utanextremvarden, family="binomial")
+summary(besok_glm)
+(exp(coef(besok_glm)["Besoktasidor"])-1)*100
+# -3 procent per sida, så nästan samma. Grupp 2 oh grupp 5 har en samspelseffekt.  
+
+# Korrelerar tid och ålder?
+besok_glm <- glm(Kundkorg=="0" ~ Besoktasidor + TidSpenderad, data=variabler_utanextremvarden, family="binomial")
+summary(besok_glm, corr=T)
+(exp(coef(besok_glm)["Besoktasidor"])-1)*100
+(exp(coef(besok_glm)["TidSpenderad"])-1)*100
+# -2 procent per sida, så hälften av vad det var innan.
+(exp(-0.66)-1)*100 # -48 korr inte så värst. 
+
+
+# Korrelerar besökta sidor och antal produkter en kund lägger till?
+besok_glm <- glm(Kundkorg=="0" ~ Besoktasidor + CartAdditions + Besoktasidor:CartAdditions, data=variabler_utanextremvarden, family="binomial")
+summary(besok_glm)
+(exp(coef(besok_glm)["CartAdditions"])-1)*100
+# -3 procent per sida, så nästan samma igen.  CartAdd blir här -10, nästan samma.
+
+
+### Bes?kta sidor ej kontinuerlig 2022-05-30 
+freq(data3$Pages, order= "-freq") # Får fram de mest besökta.  -freq = omv?nd ordning s? att de mest frekventa kan ses i console. 
+
+
+
+
+#########
+## Har dag någon inverkan på om kundkorgen blir övergiven?
+# Kollar om det finns sign skillnad mellan grupper
+print(ctable(x = variabler_utanextremvarden$Dag, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+### Ja, det fanns sign skillnader. Kollar med glm
+dag_glm <- glm(Kundkorg=="0" ~ Dag, data=variabler_utanextremvarden, family="binomial")
+summary(dag_glm, corr=T)
+exp(coef(dag_glm)["(Intercept)"])
+(exp(coef(dag_glm)["(Intercept)"])-1)*100
+# Dag 3 har en signifikant inverkan på övergivna kundkorgar, med 20%. Dag 5 60%. 
+# Konverteringsgraden rensat för effekten av dag är -15%. 
+
+## Finns det någon samvariation med ex ålder? 
+dag_glm <- glm(Kundkorg=="0" ~ Dag + Aldersgrp + Dag:Aldersgrp, data=variabler_utanextremvarden, family="binomial")
+summary(dag_glm)
+exp(coef(dag_glm)["(Intercept)"])
+(exp(coef(dag_glm)["(Intercept)"])-1)*100
+### Intercept blir signifikant. Dag 3 och 5 samt Ålder blir sign. Dock inte samspelsvariabeln.
+
+
+#### CartAdditions
+cartsize_glm <- glm(Kundkorg=="0" ~ CartAdditions, data=variabler_utanextremvarden, family="binomial")
+summary(cartsize_glm)
+(exp(coef(cartsize_glm)["CartAdditions"])-1)*100 # -11 % Sannolikheten att en kundkorg överges minskar med 11 % 
+plot(variabler_utanextremvarden$CartAdditions, fitted(glm(Kundkorg=="0" ~ CartAdditions, data=variabler_utanextremvarden, family="binomial")), xlab="Kundkorgens storlek", ylab = "Sannolikhet att kundkorgen överges")
+
+## Finns det skillnader bland olika åldrar? 
+cartsize_glm <- glm(Kundkorg=="0" ~ CartAdditions + Aldersgrp + CartAdditions:Aldersgrp, data=variabler_utanextremvarden, family="binomial")
+summary(cartsize_glm)
+(exp(coef(cartsize_glm)["Aldersgrp6"])-1)*100 # -13 % Logoddset ökar något
+###  Aldersgrp: 5 och 6 har -40 resp -54. Övriga ex grupp 1 99. Men inga samspelseffekter.
+
+
+#### CartAdditions + olika kategorier
+cartsize_glm <- glm(Kundkorg=="0" ~ CartAdditions + Dam, data=variabler_utanextremvarden, family="binomial")
+summary(cartsize_glm)
+(exp(coef(cartsize_glm)["CartAdditions"])-1)*100 # -10.7 % Sannolikheten att en kundkorg överges minskar med 11 % 
+# Ingen skillnad på Cartadd med två produkter från hemined och dam.
+
+cartsize_glm <- glm(Kundkorg=="0" ~ CartAdditions + Heminredning, data=variabler_utanextremvarden, family="binomial")
+summary(cartsize_glm)
+(exp(coef(cartsize_glm)["CartAdditions"])-1)*100 # -11 % Sannolikheten att en kundkorg överges minskar med 11 % 
+# Ingen skillnad på Cartadd när hänsyn tas till heminredning. 
+
+
+#### Produktkategorier
+# Testar chitvå test. 
+print(ctable(x = variabler_utanextremvarden$Dam, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = variabler_utanextremvarden$Heminredning, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = variabler_utanextremvarden$M?n, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = variabler_utanextremvarden$Elektronik, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = variabler_utanextremvarden$Barn, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = variabler_utanextremvarden$Sk?nhet, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+##### Vill skapa en barplot med antal produkter tillagda i en kundkorg från respektive kategori 
+# Gör först en matris med summorna av antal tillagda produkter
+view(dfSummary(variabler_utanextremvarden, headings = FALSE)) # Kollar produktkategori = 1
+produktsummor <- matrix(c(7770, 12626, 4631, 1921, 4852, 518), nrow=1, ncol=6, byrow=TRUE)
+
+# Därefter en barplot där namnen på respektive kategori anges under names.arg
+barplot(produktsummor,
+        names.arg=c("Heminredning", "Dam", "Barn", "Skonhet", "Man", "Elektronik"), # x label
+        xlab="Produktkategori",ylab="Produkter tillagda i kundkorg",col=c("darkblue"),
+        cex.main=2)
+# legend
+abline(h = 0)
+
+
+# Heminredning
+produktkategori_glm <- glm(Kundkorg=="0" ~ Heminredning, data=variabler_utanextremvarden, family="binomial")
+summary(produktkategori_glm)
+(exp(coef(produktkategori_glm)["Heminredning1"])-1)*100 # Sannolikheten att en kundkorg överges ökar med ~65 
+# Modellen blir sign. 
+
+produktkategori_glm <- glm(Kundkorg=="0" ~ Heminredning + Aldersgrp, data=variabler_utanextremvarden, family="binomial")
+summary(produktkategori_glm)
+(exp(coef(produktkategori_glm)["Heminredning1"])-1)*100 # Sannolikheten att en kundkorg överges ?r nu ist?llet 52 
+# Modellen blir sign, sann har en 52 ist?llet f?r 65. 
+
+## Dam
+produktkategori_glm <- glm(Kundkorg=="0" ~ Dam, data=variabler_utanextremvarden, family="binomial")
+summary(produktkategori_glm)
+(exp(coef(produktkategori_glm)["Dam1"])-1)*100 # Sannolikheten att en kundkorg överges minskar med 35
+
+produktkategori_glm <- glm(Kundkorg=="0" ~ Dam + Aldersgrp + Dam:Aldersgrp, data=variabler_utanextremvarden, family="binomial")
+summary(produktkategori_glm)
+(exp(coef(produktkategori_glm)["Dam1"])-1)*100 # Sannolikheten att en kundkorg överges blir 30
+
+
+## Skonhet
+produktkategori_glm <- glm(Kundkorg=="0" ~ Sk?nhet, data=variabler_utanextremvarden, family="binomial")
+summary(produktkategori_glm)
+(exp(coef(produktkategori_glm)["Skonhet1"])-1)*100 # Sannolikheten att en kundkorg överges minskar med 15
+# Intercept blir ej sign, kan inte antas vara 0 när skönhet tas hänsyn till. 
+
+## Barn
+produktkategori_glm <- glm(Kundkorg=="0" ~ Barn, data=variabler_utanextremvarden, family="binomial")
+summary(produktkategori_glm)
+## Inget blir sign. 
+
+## Män
+produktkategori_glm <- glm(Kundkorg=="0" ~ M?n, data=variabler_utanextremvarden, family="binomial")
+summary(produktkategori_glm)
+## Inget blir sign
+
+## Elektronik
+produktkategori_glm <- glm(Kundkorg=="0" ~ Elektronik, data=variabler_utanextremvarden, family="binomial")
+summary(produktkategori_glm)
+## Inget blir sign
+
+## Blandar signifikanta kategorier
+produktkategori_glm <- glm(Kundkorg=="0" ~ Heminredning + Dam + Sk?nhet + Barn + M?n, data=variabler_utanextremvarden, family="binomial")
+summary(produktkategori_glm, corr=T)
+## Intercept blir ej sign samt ingen större korr.
+
+## H?nsyn tas till att kundkorgen varierar i storlek
+produktkategori_glm <- glm(Kundkorg=="0" ~ Heminredning + , data=variabler_utanextremvarden, family="binomial")
+summary(produktkategori_glm, corr=T)
+## Intercept blir ej sign samt ingen större korr.
+
+
+
+### Checkout 
+### Har det antal gånger en kund granskar sin betalning någon inverkan på kundkorgens utfall? 
+checkout_glm <- glm(Kundkorg=="0" ~ Checkouts, data=variabler_utanextremvarden, family="binomial")
+summary(checkout_glm)
+(exp(coef(checkout_glm)["Checkouts"])-1)*100 # Sannolikheten att en kundkorg överges ökar med 6 per checkout % 
+
+### Om hänsyn tas till skillnader i åldrar, hur ser checkouts inverkan på kundkorgen ut då? 
+checkout_glm <- glm(Kundkorg=="0" ~ Checkouts + Aldersgrp + Checkouts:Aldersgrp, data=variabler_utanextremvarden, family="binomial")
+summary(checkout_glm, corr=T)
+
+# Intercept, checkouts, Aldersgrp sign. Samspel: aldersgr 2,5 och 6 är sign.
+# Checkout:aldersgrp 1,3 har inget samspel men 2,5 och 6 har. 
+# korrelation ca 76 för åldersgrupp 2,3 och checkouts. 
+(exp(-0.55)-1)*100
+
+(exp(coef(checkout_glm)["Checkouts"])-1)*100 # 5%, Sannolikheten att en kundkorg överges minskar något när hänsyn tas till skillnader mellan
+# åldersgrupper. 
+
+### Om hänsyn tas till skillnader i olika kundkorgar, hur ser checkouts inverkan på kundkorgen ut då? 
+checkout_glm <- glm(Kundkorg=="0" ~ Checkouts + CartAdditions + Checkouts:CartAdditions, data=variabler_utanextremvarden, family="binomial")
+summary(checkout_glm, corr=T)
+### samspelskoefficienten blir inte sign. Dock övriga. checkouts = 13. Tas hänsyn till att storleken på kundkorgen varierar, ökar den
+# förväntade sannolikheten att en kundkorg blir övergiven. 
+(exp(coef(checkout_glm)["Checkouts"])-1)*100 # Sannolikheten att en kundkorg överges ökar med 7 per checkout % 
+
+### Kollar checkouts inverkan på kundkorg, när tagit hänsyn till felmeddelande
+promotion.check_glm <- glm(Kundkorg=="0" ~ Checkouts + Promotion.error, data=variabler_utanextremvarden, family="binomial")
+summary(promotion.check_glm)
+(exp(coef(promotion.check_glm)["Checkouts"])-1)*100 # Sannolikheten att en kundkorg överges ökar med 15 %, checkouts 7. 
+
+
+######
+## Har betalningsmedel någon inverkan på om kundkorgen blir övergiven?
+# Kollar om det finns sign skillnad mellan grupper
+print(ctable(x = variabler_utanextremvarden$Betalningsmetod, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+variabler_utanextremvarden$Betalningsmetod <- C(variabler_utanextremvarden$Betalningsmetod, contr.treatment, base=3)
+
+### Ja, det fanns sign skillnader. Kollar med glm
+bet_glm <- glm(Kundkorg=="0" ~ Betalningsmetod, data=variabler_utanextremvarden, family="binomial")
+summary(bet_glm, corr=T) # bet 1 och 2: -0.9 
+exp(coef(dag_glm)["(Intercept)"])
+(exp(coef(bet_glm)["Betalningsmetod2"])-1)*100
+
+## Betmetod 2: -40% betmetod1: - ~45%  förväntad sannolikhet en kund överger kundkorgen
+
+## Ser i graf att det verkar finnas variationer i ålder. gör en ny glm
+bet_glm <- glm(Kundkorg=="0" ~ Betalningsmetod + Aldersgrp, data=variabler_utanextremvarden, family="binomial")
+summary(bet_glm)
+exp(coef(dag_glm)["(Intercept)"])
+(exp(coef(bet_glm)["Betalningsmetod1"])-1)*100
+
+# Med samspelsterm blir interceptet signifikant. Tas den bort blir alla parametrar sign. 
+# Aldersgrp 1-3 har, när hänsyn tagits till betalningsmetod, en ökad förväntad sannolikhet. Aldersgrp 5 och 6 minskad.  Bet 1 och 2
+
+### Kollar andra saker som ex felmeddelanden
+# Ej sign
+print(ctable(x = Mergedfile_rensad$ErrorMessageName_AuthorizationStatus_Cancel_Max, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = Mergedfile_rensad$ErrorMessageName_AuthorizationStatus_Success_Max, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = Mergedfile_rensad$ErrorMessageName_ERROR_shop_CivicNumberVerificationRequired_MIS, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = Mergedfile_rensad$ErrorMessageName_ERROR_shop_VerifyOrder_Max, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = Mergedfile_rensad$ErrorMessageName_shopError_GiftCard_Max, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = Mergedfile_rensad$ErrorMessageName_shopError_PickupPoint_Max, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = Mergedfile_rensad$ErrorMessageName_shopError_Product_Max, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+# Signifikanta
+print(ctable(x = Mergedfile_rensad$ErrorMessageName_AuthorizationStatus_Failure_Max, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = Mergedfile_rensad$ErrorMessageName_ERROR_shop_CreditCheckResult_Max, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = Mergedfile_rensad$ErrorMessageName_ERROR_PurchaseSpace_Max, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+print(ctable(x = Mergedfile_rensad$ErrorMessageName_shopError_Promotion_Max, y= Mergedfile_rensad$Kundkorgar, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+## Fyra visar signfikanta resultat. Vad innebär dem?
+
+view(dfSummary(Mergedfile_rensad, headings = FALSE))
+# ErrorMessageName_AuthorizationStatus_Failure_Max = 124 st 0.7 proc
+# ErrorMessageName_ERROR_shop_CreditCheckResult_Max = 83 st 
+# ErrorMessageName_ERROR_PurchaseSpace_Max = 262 st 
+# ErrorMessageName_shopError_Promotion_Max = 2812 st 16% 
+
+# Bryr mig bara om den sista då övriga är för små för att ha någon egentlig effekt. 
+view(dfSummary(variabler_utanextremvarden, headings = FALSE)) # 2604 st efter tvättat. 
+
+# Kollar inverkan på kundkorg
+promotion_glm <- glm(Kundkorg=="0" ~ Promotion.error, data=variabler_utanextremvarden, family="binomial")
+summary(promotion_glm)
+(exp(coef(promotion_glm)["Promotion.error1"])-1)*100 # Sannolikheten att en kundkorg överges ökar med 18 % 
+
+
+# Kollar inverkan på kundkorg
+promotion_glm <- glm(Kundkorg=="0" ~ Promotion.error + Aldersgrp, data=variabler_utanextremvarden, family="binomial")
+summary(promotion_glm)
+(exp(coef(promotion_glm)["Promotion.error1"])-1)*100 # Sannolikheten att en kundkorg överges ökar med 18 % 
+
+
+## Har tiden sedan inloggning någon inverkan på om kundkorgen blir övergiven?
+# Kollar om det finns sign skillnad mellan grupper
+print(ctable(x = variabler_utanextremvarden$Tid_kvartiler, y= variabler_utanextremvarden$Kundkorg, prop = "r", chisq=TRUE), style= "rmarkdown")
+
+### Ja, det fanns sign skillnader. Kollar med glm
+tid_glm <- glm(Kundkorg=="0" ~ Tid_kvartiler, data=variabler_utanextremvarden, family="binomial")
+summary(tid_glm, corr=T)
+exp(coef(tid_glm)["(Intercept)"])
+(exp(coef(tid_glm)["Tid_kvartiler1"])-1)*100
+
+### Tid som kontinuerlig variabel
+tid_kont_glm <- glm(Kundkorg=="0" ~ TidSpenderad, data=variabler_utanextremvarden, family="binomial")
+summary(tid_kont_glm)
+(exp(coef(tid_kont_glm)["TidSpenderad"])-1)*100
+plot(variabler_utanextremvarden$TidSpenderad, fitted(glm(Kundkorg=="0" ~ TidSpenderad, data=variabler_utanextremvarden, family="binomial")), xlab="Tid", ylab = "Sannolikhet att kundkorgen överges")
+
+### Kundkorg, ålder, produkter tillagda i korgen, tid 
+alderproduktertid_glm <- glm(TidSpenderad + Alder + CartAdditions, data=variabler_utanextremvarden, family="binomial")
+summary(alderproduktertid_glm, corr=T)
+exp(coef(alderproduktertid_glm)["TidSpenderad"])
+(exp(coef(alderproduktertid_glm)["TidSpenderad"])-1)*100
+plot(variabler_utanextremvarden$CartAdditions, fitted(glm(Kundkorg=="0" ~ CartAdditions, data=variabler_utanextremvarden, family="binomial")), xlab="Ålder", ylab = "Sannolikhet att kundkorgen överges")
+
+
+
+
+
